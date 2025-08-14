@@ -97,6 +97,12 @@ FD_OPTION_PLUGIN(RGWX_ACCT "Build Accounting RADIUS translation plugin? (RFC2866
  	   RGWX_ADD_PLUGIN(acct ${RG_COMMON_HEADER} rgwx_acct.c)
 	ENDIF (RGWX_ACCT)
 
+### VoWiFi EAP-AKA authentication plugin
+FD_OPTION_PLUGIN(RGWX_VOWIFI "Build VoWiFi EAP-AKA translation plugin? (3GPP SWm/SWx)" ON)
+	IF (RGWX_VOWIFI)
+ 	   RGWX_ADD_PLUGIN(vowifi ${RG_COMMON_HEADER} rgwx_vowifi.c)
+	ENDIF (RGWX_VOWIFI)
+
 
 ### Generic plugin to handle some attributes (either delete them or simply echo them in the answer) 
 FD_OPTION_PLUGIN(RGWX_ECHODROP "Build 'echo/drop' plugin? (drop specific RADIUS attributes or echo them in RADIUS answer)" ON)
