@@ -129,6 +129,9 @@ int rgw_work_start(void);
 int rgw_work_add(struct rgw_radius_msg_meta * msg, struct rgw_client * client);
 void rgw_work_fini(void);
 
+/* Reverse gateway module, handle Diameter->RADIUS conversion */
+int rgw_reverse_init(char * conffile);
+void rgw_reverse_fini(void);
 
 #endif /* _RGW_H */
   

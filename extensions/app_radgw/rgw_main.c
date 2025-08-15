@@ -47,6 +47,9 @@ static int rgw_main(char * conffile)
 	
 	CHECK_FCT( rgw_conf_handle(conffile) );
 	
+	/* Initialize reverse gateway (Diameter->RADIUS) */
+	CHECK_FCT( rgw_reverse_init(conffile) );
+	
 	LOG_D( "Extension RADIUS Gateway initialized with configuration: '%s'", conffile);
 	rgw_servers_dump();
 	rgw_clients_dump();
@@ -71,6 +74,7 @@ void fd_ext_fini(void)
 	rgw_work_fini();
 	rgw_plg_fini();
 	rgw_clients_fini();
+	rgw_reverse_fini();
 }
 
 EXTENSION_ENTRY("app_radgw", rgw_main);

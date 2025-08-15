@@ -23,6 +23,7 @@ SET( RGW_DEFAULT_SRC
 	rgw_plugins.c
 	rgw_servers.c
 	rgw_worker.c
+	rgw_reverse.c
 )
 
 SET( RG_COMMON_HEADER
@@ -113,6 +114,9 @@ FD_OPTION_PLUGIN(RGWX_ECHODROP "Build 'echo/drop' plugin? (drop specific RADIUS 
  	   RGWX_ADD_PLUGIN(echodrop ${RG_COMMON_HEADER} rgwx_echodrop.h rgwx_echodrop.c lex.rgwx_echodrop.c rgwx_echodrop.tab.c rgwx_echodrop.tab.h )
   	ENDIF (RGWX_ECHODROP)
 	
+set_target_properties(app_radgw PROPERTIES
+  C_VISIBILITY_PRESET default
+  VISIBILITY_INLINES_HIDDEN NO)
 	
 ####
 ## INSTALL section ##
