@@ -2,7 +2,8 @@ PROJECT("freeDiameter extensions" C)
 
 # We want all resulting objects in the same folder
 SET(LIBRARY_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR})
-
+set(CMAKE_C_VISIBILITY_PRESET default)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN NO)
 # Use the macro FD_ADD_EXTENSION(name files...) to create an extension
 # It is equivalent to add_library with the appropriate parameters
 # and naming conventions (.fdx : FreeDiameter eXtension)
