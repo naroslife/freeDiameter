@@ -475,12 +475,19 @@ static int auth_rad_req( struct rgwp_config * cs, struct radius_msg * rad_req, s
 			/* Get information on the RADIUS client */
 			CHECK_FCT( rgw_clients_get_origin(cli, &fqdn, &fqdnlen, &realm, &realmlen) );
 			
+			/* Debug: Log the values we're about to use */
+			TRACE_DEBUG(INFO, "[auth.rgwx] Creating session with fqdn='%.*s' (%zu), realm='%.*s' (%zu)", 
+			            (int)fqdnlen, fqdn, fqdnlen, (int)realmlen, realm, realmlen);
+			
 			/* If we have a user name, create the new session with it */
 			if (un) {
 				int len;
 				/* If not found, create a new Session-Id. Our format is: {fqdn;hi32;lo32;username;diamid} */
 				CHECK_MALLOC( sess_str = malloc(un_len + 1 /* ';' */ + fd_g_config->cnf_diamid_len + 1 /* '\0' */) );
 				len = sprintf((char *)sess_str, "%.*s;%s", (int)un_len, un, fd_g_config->cnf_diamid);
+				
+				TRACE_DEBUG(INFO, "[auth.rgwx] Session string: '%.*s' (len=%d)", len, sess_str, len);
+				
 				CHECK_FCT( fd_sess_new(&sess, fqdn, fqdnlen, sess_str, len) );
 				free(sess_str);
 			} else {

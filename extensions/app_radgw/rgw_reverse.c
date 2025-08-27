@@ -137,11 +137,14 @@ static int rgw_reverse_der_to_radius(struct msg *der, struct radius_msg **rad_ms
 	size_t eap_len = 0;
 	
 	/* Create new RADIUS message */
+	LOG_N("REVERSE GATEWAY: Creating RADIUS message");
 	msg = radius_msg_new(RADIUS_CODE_ACCESS_REQUEST, next_radius_id++);
 	if (!msg) {
+		LOG_E("REVERSE GATEWAY ERROR: Failed to create RADIUS message");
 		TRACE_ERROR("Failed to create RADIUS message");
 		return -1;
 	}
+	LOG_N("REVERSE GATEWAY: RADIUS message created successfully");
 	
 	/* Generate random authenticator */
 	for (int i = 0; i < 16; i++) {
@@ -149,9 +152,11 @@ static int rgw_reverse_der_to_radius(struct msg *der, struct radius_msg **rad_ms
 	}
 	
 	/* Extract AVPs from Diameter message */
+	LOG_N("REVERSE GATEWAY: Extracting AVPs from Diameter message");
 	CHECK_FCT(fd_msg_browse(der, MSG_BRW_FIRST_CHILD, &avp, NULL));
 	while (avp) {
 		CHECK_FCT(fd_msg_avp_hdr(avp, &hdr));
+		LOG_N("REVERSE GATEWAY: Processing AVP code %d", hdr->avp_code);
 		
 		if (hdr->avp_code == 263) {  /* Session-Id */
 			session_id = strndup((char *)hdr->avp_value->os.data, hdr->avp_value->os.len);
@@ -190,17 +195,17 @@ static int rgw_reverse_der_to_radius(struct msg *der, struct radius_msg **rad_ms
 	radius_msg_add_attr(msg, RADIUS_ATTR_NAS_IDENTIFIER,
 	                    (uint8_t *)nas_id, strlen(nas_id));
 	
-	/* Add Message-Authenticator for EAP */
-	uint8_t msg_auth[16] = {0};
-	radius_msg_add_attr(msg, RADIUS_ATTR_MESSAGE_AUTHENTICATOR, msg_auth, 16);
-	
 	/* Calculate Message-Authenticator using HMAC-MD5 */
-	radius_msg_finish_srv(msg, (uint8_t *)g_config->radius_secret,
-	                      g_config->secret_len, NULL);
+	/* Note: radius_msg_finish will add Message-Authenticator automatically */
+	LOG_N("REVERSE GATEWAY: Finishing RADIUS message with Message-Authenticator");
+	radius_msg_finish(msg, (uint8_t *)g_config->radius_secret,
+	                  g_config->secret_len);
+	LOG_N("REVERSE GATEWAY: RADIUS message finished, storing session");
 	
 	/* Store session */
 	if (session_id) {
 		struct rgw_reverse_session *sess = calloc(1, sizeof(*sess));
+		fd_list_init(&sess->chain, sess);  /* Initialize the list chain */
 		sess->session_id = strdup(session_id);
 		sess->radius_id = msg->hdr->identifier;
 		memcpy(sess->auth_vector, msg->hdr->authenticator, 16);
@@ -218,6 +223,7 @@ static int rgw_reverse_der_to_radius(struct msg *der, struct radius_msg **rad_ms
 	
 	*rad_msg = msg;
 	
+	LOG_N("REVERSE GATEWAY: Successfully converted DER to RADIUS");
 	if (g_config->debug) {
 		TRACE_DEBUG(FULL, "Converted DER to RADIUS Access-Request");
 	}
@@ -306,14 +312,24 @@ static int rgw_reverse_radius_send_recv(struct radius_msg *req, struct radius_ms
 	req_len = ntohs(req->hdr->length);
 	
 	/* Send request */
+	LOG_N("REVERSE GATEWAY: Sending RADIUS request to %s:%d (fd=%d, %zu bytes)",
+	      inet_ntoa(radius_addr.sin_addr), ntohs(radius_addr.sin_port),
+	      radius_sockfd, req_len);
 	sent = sendto(radius_sockfd, req_buf, req_len, 0,
 	              (struct sockaddr *)&radius_addr, sizeof(radius_addr));
 	
-	if (sent != req_len) {
+	if (sent < 0) {
+		LOG_E("REVERSE GATEWAY ERROR: sendto failed: %s (errno=%d)", strerror(errno), errno);
 		TRACE_ERROR("Failed to send RADIUS request: %s", strerror(errno));
 		return -1;
 	}
+	if (sent != req_len) {
+		LOG_E("REVERSE GATEWAY ERROR: Partial send: sent %zd of %zu bytes", sent, req_len);
+		TRACE_ERROR("Failed to send complete RADIUS request: sent %zd of %zu", sent, req_len);
+		return -1;
+	}
 	
+	LOG_N("REVERSE GATEWAY: Successfully sent RADIUS request: %zd bytes", sent);
 	TRACE_DEBUG(FULL, "Sent RADIUS request: %zd bytes", sent);
 	
 	/* Receive response */
@@ -360,14 +376,18 @@ static int rgw_reverse_handle_der(struct msg **msg, struct avp *avp,
 	struct radius_msg *rad_resp = NULL;
 	int ret;
 	
+	LOG_N("REVERSE GATEWAY: Received DER message for processing");
 	TRACE_DEBUG(FULL, "Handling Diameter DER message");
 	
 	/* Convert DER to RADIUS Access-Request */
+	LOG_N("REVERSE GATEWAY: Converting DER to RADIUS Access-Request");
 	ret = rgw_reverse_der_to_radius(der, &rad_req);
 	if (ret != 0) {
+		LOG_E("REVERSE GATEWAY ERROR: Failed to convert DER to RADIUS (ret=%d)", ret);
 		TRACE_ERROR("Failed to convert DER to RADIUS");
 		goto error;
 	}
+	LOG_N("REVERSE GATEWAY: Successfully converted DER to RADIUS");
 	
 	/* Send RADIUS request and get response */
 	ret = rgw_reverse_radius_send_recv(rad_req, &rad_resp);
@@ -383,6 +403,9 @@ static int rgw_reverse_handle_der(struct msg **msg, struct avp *avp,
 		goto error;
 	}
 	
+	/* Update the message pointer to point to the answer */
+	*msg = dea;
+	
 	/* Send DEA */
 	CHECK_FCT(fd_msg_send(msg, NULL, NULL));
 	
@@ -396,7 +419,7 @@ static int rgw_reverse_handle_der(struct msg **msg, struct avp *avp,
 error:
 	/* Create error response */
 	CHECK_FCT(fd_msg_new_answer_from_req(fd_g_config->cnf_dict, &der, MSGFL_ANSW_ERROR));
-	dea = der;
+	*msg = der;  /* Update message pointer to the answer */
 	
 	/* Add error Result-Code */
 	struct avp *avp_rc;
@@ -404,7 +427,7 @@ error:
 	CHECK_FCT(fd_msg_avp_new(dict_objs.Result_Code, 0, &avp_rc));
 	val.u32 = 3002;  /* DIAMETER_UNABLE_TO_DELIVER */
 	CHECK_FCT(fd_msg_avp_setvalue(avp_rc, &val));
-	CHECK_FCT(fd_msg_avp_add(dea, MSG_BRW_LAST_CHILD, avp_rc));
+	CHECK_FCT(fd_msg_avp_add(*msg, MSG_BRW_LAST_CHILD, avp_rc));
 	
 	CHECK_FCT(fd_msg_send(msg, NULL, NULL));
 	
