@@ -335,7 +335,41 @@ static int rgw_reverse_radius_send_recv(struct radius_msg *req, struct radius_ms
 	
 	/* Receive response */
 	LOG_N("REVERSE GATEWAY: Waiting for RADIUS response...");
-	received = recvfrom(radius_sockfd, resp_buf, sizeof(resp_buf), 0, NULL, NULL);
+	struct sockaddr_in from_addr;
+	socklen_t from_len = sizeof(from_addr);
+	int retries = 6;
+	int retry_count = 0;
+	
+	do {
+		LOG_N("REVERSE GATEWAY: Attempt %d/%d to receive RADIUS response", 
+			  retry_count + 1, retries);
+		received = recvfrom(radius_sockfd, resp_buf, sizeof(resp_buf), 0, 
+							(struct sockaddr *)&from_addr, &from_len);
+		
+		if (received < 0) {
+			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+				LOG_N("REVERSE GATEWAY: Timeout on attempt %d", retry_count + 1);
+				retry_count++;
+				if (retry_count < retries) {
+					usleep(100000); /* Wait 100ms before retry */
+					continue;
+				}
+			}
+			break;
+		}
+		
+		/* Verify response is from correct server */
+		if (from_addr.sin_addr.s_addr != radius_addr.sin_addr.s_addr ||
+			from_addr.sin_port != radius_addr.sin_port) {
+			LOG_N("REVERSE GATEWAY: Response from unexpected source, ignoring");
+			retry_count++;
+			continue;
+		}
+		
+		/* Valid response received */
+		break;
+		
+	} while (retry_count < retries);
 	
 	if (received < 0) {
 		LOG_E("REVERSE GATEWAY ERROR: recvfrom failed: %s (errno=%d)", strerror(errno), errno);
@@ -358,22 +392,27 @@ static int rgw_reverse_radius_send_recv(struct radius_msg *req, struct radius_ms
 	memcpy((*resp)->buf, resp_buf, received);
 	(*resp)->buf_used = received;
 	(*resp)->hdr = (struct radius_hdr *)(*resp)->buf;
-	
+
 	/* Parse attributes */
-	if (radius_msg_initialize(*resp, received) < 0) {
+	if (radius_msg_initialize(*resp, received) < 0)
+	{
 		TRACE_ERROR("Failed to parse RADIUS response");
-		radius_msg_free(*resp);
+		if (resp)
+		{
+			LOG_N("REVERSE GATEWAY: Cleaning up RADIUS request");
+			radius_msg_free(*resp);
+		}
 		*resp = NULL;
 		return -1;
 	}
-	
+
 	return 0;
 }
 
 /* Diameter DER handler */
-static int rgw_reverse_handle_der(struct msg **msg, struct avp *avp, 
-                                   struct session *sess, void *opaque, 
-                                   enum disp_action *act)
+static int rgw_reverse_handle_der(struct msg **msg, struct avp *avp,
+								  struct session *sess, void *opaque,
+								  enum disp_action *act)
 {
 	struct msg *der = *msg;
 	struct msg *dea = NULL;
@@ -420,8 +459,16 @@ static int rgw_reverse_handle_der(struct msg **msg, struct avp *avp,
 	CHECK_FCT(fd_msg_send(msg, NULL, NULL));
 	
 	/* Cleanup */
-	radius_msg_free(rad_req);
-	radius_msg_free(rad_resp);
+	if (rad_req) {
+		LOG_E("REVERSE GATEWAY: Cleaning up RADIUS request");
+		radius_msg_free(rad_req);
+	}
+	if (rad_resp) {
+		LOG_E("REVERSE GATEWAY: Cleaning up RADIUS response");
+		radius_msg_free(rad_resp);
+	}
+	
+	LOG_N("REVERSE GATEWAY: Successfully processed DER -> DEA conversion");
 	
 	*act = DISP_ACT_CONT;
 	return 0;
@@ -441,8 +488,16 @@ error:
 	
 	CHECK_FCT(fd_msg_send(msg, NULL, NULL));
 	
-	radius_msg_free(rad_req);
-	radius_msg_free(rad_resp);
+	if (rad_req) {
+		LOG_E("REVERSE GATEWAY: Cleaning up RADIUS request");
+		radius_msg_free(rad_req);
+	}
+	if (rad_resp) {
+		LOG_E("REVERSE GATEWAY: Cleaning up RADIUS response");
+		radius_msg_free(rad_resp);
+	}
+	
+	LOG_N("REVERSE GATEWAY: Successfully processed DER -> DEA conversion");
 	
 	*act = DISP_ACT_CONT;
 	return 0;
