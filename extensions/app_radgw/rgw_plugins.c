@@ -346,12 +346,12 @@ int rgw_plg_loop_req(struct rgw_radius_msg_meta **rad, struct msg **diam_msg, st
 		struct plg_descr * plg = ((struct plg_accel_item *) li)->plg;
 		
 		if (plg->descriptor->rgwp_rad_req) {
-			TRACE_DEBUG(ANNOYING, "Calling next plugin: %s", plg->descriptor->rgwp_name);
+			TRACE_DEBUG(NONE, "Calling next plugin: %s", plg->descriptor->rgwp_name);
 			ret = (*plg->descriptor->rgwp_rad_req)(plg->cs, &(*rad)->radius, &rad_ans, diam_msg, cli);
 			if (ret)
 				break;
 		} else {
-			TRACE_DEBUG(ANNOYING, "Skipping extension '%s' (NULL callback)", plg->descriptor->rgwp_name);
+			TRACE_DEBUG(NONE, "Skipping extension '%s' (NULL callback)", plg->descriptor->rgwp_name);
 		}					
 	}
 	

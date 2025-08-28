@@ -290,6 +290,7 @@ static int rgw_reverse_radius_to_dea(struct radius_msg *rad_msg, struct msg *der
 		CHECK_FCT(fd_msg_avp_add(ans, MSG_BRW_LAST_CHILD, avp));
 	}
 	
+	/* Return the answer */
 	*dea = ans;
 	
 	if (g_config->debug) {
@@ -333,13 +334,17 @@ static int rgw_reverse_radius_send_recv(struct radius_msg *req, struct radius_ms
 	TRACE_DEBUG(FULL, "Sent RADIUS request: %zd bytes", sent);
 	
 	/* Receive response */
+	LOG_N("REVERSE GATEWAY: Waiting for RADIUS response...");
 	received = recvfrom(radius_sockfd, resp_buf, sizeof(resp_buf), 0, NULL, NULL);
 	
 	if (received < 0) {
+		LOG_E("REVERSE GATEWAY ERROR: recvfrom failed: %s (errno=%d)", strerror(errno), errno);
 		TRACE_ERROR("Failed to receive RADIUS response: %s", strerror(errno));
 		return -1;
 	}
 	
+	LOG_N("REVERSE GATEWAY: Received RADIUS response: %zd bytes, code=%d", 
+	      received, resp_buf[0]);
 	TRACE_DEBUG(FULL, "Received RADIUS response: %zd bytes", received);
 	
 	/* Parse response - create from buffer */
@@ -390,18 +395,23 @@ static int rgw_reverse_handle_der(struct msg **msg, struct avp *avp,
 	LOG_N("REVERSE GATEWAY: Successfully converted DER to RADIUS");
 	
 	/* Send RADIUS request and get response */
+	LOG_N("REVERSE GATEWAY: Calling rgw_reverse_radius_send_recv");
 	ret = rgw_reverse_radius_send_recv(rad_req, &rad_resp);
 	if (ret != 0) {
+		LOG_E("REVERSE GATEWAY ERROR: Failed to communicate with RADIUS server (ret=%d)", ret);
 		TRACE_ERROR("Failed to communicate with RADIUS server");
 		goto error;
 	}
+	LOG_N("REVERSE GATEWAY: Got RADIUS response, converting to DEA");
 	
 	/* Convert RADIUS response to DEA */
 	ret = rgw_reverse_radius_to_dea(rad_resp, der, &dea);
 	if (ret != 0) {
+		LOG_E("REVERSE GATEWAY ERROR: Failed to convert RADIUS to DEA (ret=%d)", ret);
 		TRACE_ERROR("Failed to convert RADIUS to DEA");
 		goto error;
 	}
+	LOG_N("REVERSE GATEWAY: Successfully converted RADIUS to DEA");
 	
 	/* Update the message pointer to point to the answer */
 	*msg = dea;

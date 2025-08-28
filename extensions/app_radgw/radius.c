@@ -356,7 +356,7 @@ int radius_msg_finish(struct radius_msg *msg, const u8 *secret,
 					   RADIUS_ATTR_MESSAGE_AUTHENTICATOR,
 					   auth, MD5_MAC_LEN);
 		if (attr == NULL) {
-			fd_log_debug("WARNING: Could not add Message-Authenticator");
+			fd_log_error("WARNING: Could not add Message-Authenticator");
 			return -1;
 		}
 		msg->hdr->length = htons(msg->buf_used);
@@ -366,7 +366,7 @@ int radius_msg_finish(struct radius_msg *msg, const u8 *secret,
 		msg->hdr->length = htons(msg->buf_used);
 
 	if (msg->buf_used > 0xffff) {
-		fd_log_debug("WARNING: too long RADIUS message (%lu)",
+		fd_log_error("WARNING: too long RADIUS message (%lu)",
 		       (unsigned long) msg->buf_used);
 		return -1;
 	}
