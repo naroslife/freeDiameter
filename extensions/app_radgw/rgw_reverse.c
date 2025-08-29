@@ -460,11 +460,11 @@ static int rgw_reverse_handle_der(struct msg **msg, struct avp *avp,
 	
 	/* Cleanup */
 	if (rad_req) {
-		LOG_E("REVERSE GATEWAY: Cleaning up RADIUS request");
+		LOG_N("REVERSE GATEWAY: Cleaning up RADIUS request");
 		radius_msg_free(rad_req);
 	}
 	if (rad_resp) {
-		LOG_E("REVERSE GATEWAY: Cleaning up RADIUS response");
+		LOG_N("REVERSE GATEWAY: Cleaning up RADIUS response");
 		radius_msg_free(rad_resp);
 	}
 	
@@ -497,7 +497,7 @@ error:
 		radius_msg_free(rad_resp);
 	}
 	
-	LOG_N("REVERSE GATEWAY: Successfully processed DER -> DEA conversion");
+	LOG_N("REVERSE GATEWAY: Unsuccessfully processed DER -> DEA conversion");
 	
 	*act = DISP_ACT_CONT;
 	return 0;
