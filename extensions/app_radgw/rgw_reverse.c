@@ -231,6 +231,192 @@ static int rgw_reverse_der_to_radius(struct msg *der, struct radius_msg **rad_ms
 	return 0;
 }
 
+// /* Convert MAA to RADIUS Access-Challenge with auth vectors */
+// static int rgw_reverse_maa_to_radius(struct msg *maa, struct radius_msg **rad_msg)
+// {
+// 	struct avp *avp = NULL;
+// 	struct radius_msg *msg;
+// 	char *session_id = NULL;
+// 	char *user_name = NULL;
+	
+// 	LOG_N("REVERSE GATEWAY: Converting MAA to RADIUS Access-Challenge");
+	
+// 	/* Create RADIUS Access-Challenge message */
+// 	msg = radius_msg_new(RADIUS_CODE_ACCESS_CHALLENGE, next_radius_id++);
+// 	if (!msg) {
+// 		TRACE_ERROR("Failed to create RADIUS message");
+// 		return -1;
+// 	}
+	
+// 	/* Process MAA AVPs */
+// 	CHECK_FCT(fd_msg_browse(maa, MSG_BRW_FIRST_CHILD, &avp, NULL));
+	
+// 	while (avp) {
+// 		struct avp_hdr *avp_hdr;
+		
+// 		CHECK_FCT(fd_msg_avp_hdr(avp, &avp_hdr));
+		
+// 		LOG_N("REVERSE GATEWAY: Processing MAA AVP code %u", avp_hdr->avp_code);
+		
+// 		switch (avp_hdr->avp_code) {
+// 			case 263:  /* Session-Id */
+// 				session_id = strndup((char *)avp_hdr->avp_value->os.data, avp_hdr->avp_value->os.len);
+// 				/* Add State attribute with session ID */
+// 				radius_msg_add_attr(msg, 24, (uint8_t *)session_id, strlen(session_id));
+// 				break;
+				
+// 			case 1:  /* User-Name */
+// 				user_name = strndup((char *)avp_hdr->avp_value->os.data, avp_hdr->avp_value->os.len);
+// 				radius_msg_add_attr(msg, RADIUS_ATTR_USER_NAME, 
+// 				                    (uint8_t *)user_name, strlen(user_name));
+// 				break;
+				
+// 			case 612:  /* SIP-Auth-Data-Item (grouped) */
+// 			{
+// 				/* Browse into grouped AVP */
+// 				struct avp *sip_item = NULL;
+// 				CHECK_FCT(fd_msg_browse(avp, MSG_BRW_FIRST_CHILD, &sip_item, NULL));
+				
+// 				uint8_t *rand_val = NULL, *autn_val = NULL, *xres_val = NULL;
+// 				size_t rand_len = 0, autn_len = 0, xres_len = 0;
+				
+// 				while (sip_item) {
+// 					struct avp_hdr *sip_hdr;
+					
+// 					CHECK_FCT(fd_msg_avp_hdr(sip_item, &sip_hdr));
+					
+// 					switch (sip_hdr->avp_code) {
+// 						case 608:  /* SIP-Authentication-Scheme */
+// 							/* Should be "EAP-AKA" */
+// 							LOG_N("REVERSE GATEWAY: Auth scheme: %.*s", 
+// 							      (int)sip_hdr->avp_value->os.len, sip_hdr->avp_value->os.data);
+// 							break;
+							
+// 						case 609:  /* SIP-Authenticate */
+// 							/* Contains RAND||AUTN */
+// 							if (sip_hdr->avp_value->os.len >= 32) {
+// 								rand_val = sip_hdr->avp_value->os.data;
+// 								rand_len = 16;
+// 								autn_val = sip_hdr->avp_value->os.data + 16;
+// 								autn_len = 16;
+// 								LOG_N("REVERSE GATEWAY: Got RAND (16 bytes) and AUTN (16 bytes)");
+// 							}
+// 							break;
+							
+// 						case 610:  /* SIP-Authorization */
+// 							/* Contains XRES */
+// 							xres_val = sip_hdr->avp_value->os.data;
+// 							xres_len = sip_hdr->avp_value->os.len;
+// 							LOG_N("REVERSE GATEWAY: Got XRES (%zu bytes)", xres_len);
+// 							break;
+// 					}
+					
+// 					/* Get next SIP AVP */
+// 					CHECK_FCT(fd_msg_browse(sip_item, MSG_BRW_NEXT, &sip_item, NULL));
+// 				}
+				
+// 				/* Add auth vectors as Vendor-Specific Attributes */
+// 				if (rand_val && autn_val) {
+// 					/* Vendor-Specific format: vendor-id (4 bytes) + vendor-type (1 byte) + data */
+// 					uint8_t vsa_buf[255];
+// 					size_t vsa_len;
+					
+// 					/* 3GPP Vendor ID = 10415 */
+// 					uint32_t vendor_id = htonl(10415);
+					
+// 					/* Add RAND as VSA type 1 */
+// 					vsa_len = 0;
+// 					memcpy(vsa_buf + vsa_len, &vendor_id, 4);
+// 					vsa_len += 4;
+// 					vsa_buf[vsa_len++] = 1;  /* Type for RAND */
+// 					vsa_buf[vsa_len++] = rand_len + 2;  /* Length including type and length */
+// 					memcpy(vsa_buf + vsa_len, rand_val, rand_len);
+// 					vsa_len += rand_len;
+// 					radius_msg_add_attr(msg, RADIUS_ATTR_VENDOR_SPECIFIC, vsa_buf, vsa_len);
+					
+// 					/* Add AUTN as VSA type 2 */
+// 					vsa_len = 0;
+// 					memcpy(vsa_buf + vsa_len, &vendor_id, 4);
+// 					vsa_len += 4;
+// 					vsa_buf[vsa_len++] = 2;  /* Type for AUTN */
+// 					vsa_buf[vsa_len++] = autn_len + 2;
+// 					memcpy(vsa_buf + vsa_len, autn_val, autn_len);
+// 					vsa_len += autn_len;
+// 					radius_msg_add_attr(msg, RADIUS_ATTR_VENDOR_SPECIFIC, vsa_buf, vsa_len);
+					
+// 					/* Add XRES as VSA type 3 (for server to verify later) */
+// 					if (xres_val) {
+// 						vsa_len = 0;
+// 						memcpy(vsa_buf + vsa_len, &vendor_id, 4);
+// 						vsa_len += 4;
+// 						vsa_buf[vsa_len++] = 3;  /* Type for XRES */
+// 						vsa_buf[vsa_len++] = xres_len + 2;
+// 						memcpy(vsa_buf + vsa_len, xres_val, xres_len);
+// 						vsa_len += xres_len;
+// 						radius_msg_add_attr(msg, RADIUS_ATTR_VENDOR_SPECIFIC, vsa_buf, vsa_len);
+// 					}
+// 				}
+// 				break;
+// 			}
+			
+// 			case 268:  /* Result-Code */
+// 				/* Check if authentication was successful */
+// 				if (avp_hdr->avp_value->u32 != 2001) {
+// 					LOG_E("REVERSE GATEWAY: MAA indicates failure, Result-Code=%u", avp_hdr->avp_value->u32);
+// 					/* Convert to Access-Reject instead */
+// 					radius_msg_set_hdr(msg, RADIUS_CODE_ACCESS_REJECT, msg->hdr->identifier);
+// 				}
+// 				break;
+// 		}
+		
+// 		/* Get next AVP */
+// 		CHECK_FCT(fd_msg_browse(avp, MSG_BRW_NEXT, &avp, NULL));
+// 	}
+	
+// 	/* Add NAS attributes */
+// 	uint32_t nas_ip = inet_addr("127.0.0.1");
+// 	radius_msg_add_attr(msg, RADIUS_ATTR_NAS_IP_ADDRESS, 
+// 	                    (uint8_t *)&nas_ip, 4);
+// 	radius_msg_add_attr_int32(msg, RADIUS_ATTR_NAS_PORT, 0);
+	
+// 	const char *nas_id = "freediameter-maa";
+// 	radius_msg_add_attr(msg, RADIUS_ATTR_NAS_IDENTIFIER, 
+// 	                    (uint8_t *)nas_id, strlen(nas_id));
+	
+// 	/* Add Message-Authenticator */
+// 	radius_msg_add_attr(msg, RADIUS_ATTR_MESSAGE_AUTHENTICATOR, 
+// 	                    (uint8_t *)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16);
+	
+// 	/* Finish message */
+// 	LOG_N("REVERSE GATEWAY: Finishing RADIUS message with Message-Authenticator");
+// 	radius_msg_finish(msg, (uint8_t *)g_config->radius_secret,
+// 	                  g_config->secret_len);
+	
+// 	/* Store session for response matching */
+// 	if (session_id) {
+// 		struct rgw_reverse_session *sess = calloc(1, sizeof(*sess));
+// 		fd_list_init(&sess->chain, sess);
+// 		sess->session_id = strdup(session_id);
+// 		sess->radius_id = msg->hdr->identifier;
+// 		memcpy(sess->auth_vector, msg->hdr->authenticator, 16);
+// 		sess->created = time(NULL);
+		
+// 		pthread_mutex_lock(&session_lock);
+// 		fd_list_insert_before(&session_list, &sess->chain);
+// 		pthread_mutex_unlock(&session_lock);
+// 	}
+	
+// 	/* Cleanup */
+// 	free(user_name);
+// 	free(session_id);
+	
+// 	*rad_msg = msg;
+	
+// 	LOG_N("REVERSE GATEWAY: Successfully converted MAA to RADIUS Access-Challenge");
+	
+// 	return 0;
+// }
+
 /* Convert RADIUS response to Diameter DEA */
 static int rgw_reverse_radius_to_dea(struct radius_msg *rad_msg, struct msg *der, struct msg **dea)
 {
@@ -300,6 +486,71 @@ static int rgw_reverse_radius_to_dea(struct radius_msg *rad_msg, struct msg *der
 	return 0;
 }
 
+/* Helper function to get RADIUS code name */
+static const char* radius_code_name(uint8_t code)
+{
+	switch (code) {
+		case RADIUS_CODE_ACCESS_REQUEST: return "Access-Request";
+		case RADIUS_CODE_ACCESS_ACCEPT: return "Access-Accept";
+		case RADIUS_CODE_ACCESS_REJECT: return "Access-Reject";
+		case RADIUS_CODE_ACCOUNTING_REQUEST: return "Accounting-Request";
+		case RADIUS_CODE_ACCOUNTING_RESPONSE: return "Accounting-Response";
+		case RADIUS_CODE_ACCESS_CHALLENGE: return "Access-Challenge";
+		case RADIUS_CODE_STATUS_SERVER: return "Status-Server";
+		case RADIUS_CODE_STATUS_CLIENT: return "Status-Client";
+		case 40: return "Disconnect-Request";  /* RFC 3576 */
+		case 41: return "Disconnect-ACK";
+		case 42: return "Disconnect-NAK";
+		case 43: return "CoA-Request";
+		case 44: return "CoA-ACK";
+		case 45: return "CoA-NAK";
+		default: return "Unknown";
+	}
+}
+
+/* Helper function to log RADIUS message details */
+static void log_radius_message(const char *direction, struct radius_msg *msg)
+{
+	if (!msg || !msg->hdr) return;
+	
+	LOG_N("REVERSE GATEWAY: %s RADIUS Message:", direction);
+	LOG_N("  Code: %d (%s)", msg->hdr->code, radius_code_name(msg->hdr->code));
+	LOG_N("  Identifier: %d", msg->hdr->identifier);
+	LOG_N("  Length: %d bytes", ntohs(msg->hdr->length));
+	
+	/* Log key attributes */
+	for (size_t i = 0; i < msg->attr_used; i++) {
+		struct radius_attr_hdr *attr = (struct radius_attr_hdr *)
+		                                (msg->buf + msg->attr_pos[i]);
+		switch (attr->type) {
+			case RADIUS_ATTR_USER_NAME:
+				LOG_N("  User-Name: %.*s", attr->length - 2, (char *)(attr + 1));
+				break;
+			case RADIUS_ATTR_NAS_IP_ADDRESS:
+				{
+					uint32_t ip;
+					memcpy(&ip, attr + 1, 4);
+					struct in_addr addr;
+					addr.s_addr = ip;
+					LOG_N("  NAS-IP-Address: %s", inet_ntoa(addr));
+				}
+				break;
+			case RADIUS_ATTR_NAS_IDENTIFIER:
+				LOG_N("  NAS-Identifier: %.*s", attr->length - 2, (char *)(attr + 1));
+				break;
+			case RADIUS_ATTR_EAP_MESSAGE:
+				LOG_N("  EAP-Message: %d bytes", attr->length - 2);
+				break;
+			case RADIUS_ATTR_MESSAGE_AUTHENTICATOR:
+				LOG_N("  Message-Authenticator: present");
+				break;
+			case RADIUS_ATTR_STATE:
+				LOG_N("  State: %d bytes", attr->length - 2);
+				break;
+		}
+	}
+}
+
 /* Send RADIUS packet and receive response */
 static int rgw_reverse_radius_send_recv(struct radius_msg *req, struct radius_msg **resp)
 {
@@ -312,8 +563,12 @@ static int rgw_reverse_radius_send_recv(struct radius_msg *req, struct radius_ms
 	req_buf = (uint8_t *)req->buf;
 	req_len = ntohs(req->hdr->length);
 	
+	/* Log outgoing request details */
+	log_radius_message("Sending", req);
+	
 	/* Send request */
-	LOG_N("REVERSE GATEWAY: Sending RADIUS request to %s:%d (fd=%d, %zu bytes)",
+	LOG_N("REVERSE GATEWAY: Sending RADIUS %s to %s:%d (fd=%d, %zu bytes)",
+	      radius_code_name(req->hdr->code),
 	      inet_ntoa(radius_addr.sin_addr), ntohs(radius_addr.sin_port),
 	      radius_sockfd, req_len);
 	sent = sendto(radius_sockfd, req_buf, req_len, 0,
@@ -377,37 +632,99 @@ static int rgw_reverse_radius_send_recv(struct radius_msg *req, struct radius_ms
 		return -1;
 	}
 	
-	LOG_N("REVERSE GATEWAY: Received RADIUS response: %zd bytes, code=%d", 
-	      received, resp_buf[0]);
+	LOG_N("REVERSE GATEWAY: Received RADIUS response: %zd bytes, code=%d (%s)", 
+	      received, resp_buf[0], radius_code_name(resp_buf[0]));
 	TRACE_DEBUG(FULL, "Received RADIUS response: %zd bytes", received);
 	
-	/* Parse response - create from buffer */
-	*resp = radius_msg_new(0, 0);
+	/* Allocate RADIUS message structure */
+	*resp = malloc(sizeof(struct radius_msg));
 	if (!*resp) {
-		TRACE_ERROR("Failed to allocate RADIUS response");
+		TRACE_ERROR("Failed to allocate RADIUS response structure");
 		return -1;
 	}
+	memset(*resp, 0, sizeof(struct radius_msg));
 	
-	/* Copy response data */
-	memcpy((*resp)->buf, resp_buf, received);
-	(*resp)->buf_used = received;
-	(*resp)->hdr = (struct radius_hdr *)(*resp)->buf;
-
-	/* Parse attributes */
-	if (radius_msg_initialize(*resp, received) < 0)
-	{
-		TRACE_ERROR("Failed to parse RADIUS response");
-		if (resp)
-		{
-			LOG_N("REVERSE GATEWAY: Cleaning up RADIUS request");
-			radius_msg_free(*resp);
-		}
+	/* Initialize the message structure with the correct size */
+	if (radius_msg_initialize(*resp, received) < 0) {
+		TRACE_ERROR("Failed to initialize RADIUS response");
+		free(*resp);
 		*resp = NULL;
 		return -1;
 	}
+	
+	/* Copy the received data into the allocated buffer */
+	memcpy((*resp)->buf, resp_buf, received);
+	(*resp)->buf_size = (*resp)->buf_used = received;
+	(*resp)->hdr = (struct radius_hdr *)(*resp)->buf;
+	
+	/* Parse attributes */
+	unsigned char *pos = (unsigned char *)((*resp)->hdr + 1);
+	unsigned char *end = (*resp)->buf + (*resp)->buf_used;
+	struct radius_attr_hdr *attr;
+	
+	while (pos < end) {
+		if ((size_t)(end - pos) < sizeof(*attr)) {
+			TRACE_ERROR("RADIUS message attribute truncated");
+			radius_msg_free(*resp);
+			free(*resp);
+			*resp = NULL;
+			return -1;
+		}
+		
+		attr = (struct radius_attr_hdr *)pos;
+		if (pos + attr->length > end || attr->length < sizeof(*attr)) {
+			TRACE_ERROR("Invalid RADIUS attribute length");
+			radius_msg_free(*resp);
+			free(*resp);
+			*resp = NULL;
+			return -1;
+		}
+		
+		/* Store attribute position */
+		if ((*resp)->attr_used >= (*resp)->attr_size) {
+			/* Need to resize attribute array */
+			size_t new_size = (*resp)->attr_size * 2;
+			size_t *new_pos = realloc((*resp)->attr_pos, new_size * sizeof(size_t));
+			if (!new_pos) {
+				TRACE_ERROR("Failed to resize attribute array");
+				radius_msg_free(*resp);
+				free(*resp);
+				*resp = NULL;
+				return -1;
+			}
+			(*resp)->attr_pos = new_pos;
+			(*resp)->attr_size = new_size;
+		}
+		
+		(*resp)->attr_pos[(*resp)->attr_used++] = pos - (*resp)->buf;
+		pos += attr->length;
+	}
+	
+	/* Log received response details */
+	log_radius_message("Received", *resp);
 
 	return 0;
 }
+// PSEUDO
+// challenge_to_radius_cb() {
+
+// 	diameter_uzenet_challengere_a_valasz;
+
+// 	auto radius_challenge_valasz = convert_to_radius(diameter_uzenet_challengere_a_valasz);
+// 	rgw_reverse_radius_send_recv(radius_challenge_valasz, &rad_resp);
+
+// }
+
+// PSEUDO
+// maa_callback() {
+// 	maa answer;
+// 	maa_to_valamilyen_radius(radius_msg);
+// 	rgw_reverse_radius_send_recv(radius_msg, &rad_resp);
+// 	if (van challenge) {
+// 		create_challenge_diameter_answer(der, dia_challenge_ans);
+// 		fd_msg_send(dia_challenge_ans, challenge_to_radius_cb)
+// 	}
+// }
 
 /* Diameter DER handler */
 static int rgw_reverse_handle_der(struct msg **msg, struct avp *avp,
@@ -436,6 +753,14 @@ static int rgw_reverse_handle_der(struct msg **msg, struct avp *avp,
 	/* Send RADIUS request and get response */
 	LOG_N("REVERSE GATEWAY: Calling rgw_reverse_radius_send_recv");
 	ret = rgw_reverse_radius_send_recv(rad_req, &rad_resp);
+
+	// PSEUDO
+	// if (rad_resp == kerjel hsstol) {
+	// 	create_mar(mar);
+	// 	fd_msg_send(mar, maa_callback());
+	// }
+
+
 	if (ret != 0) {
 		LOG_E("REVERSE GATEWAY ERROR: Failed to communicate with RADIUS server (ret=%d)", ret);
 		TRACE_ERROR("Failed to communicate with RADIUS server");
@@ -503,10 +828,164 @@ error:
 	return 0;
 }
 
-/* Initialize reverse gateway */
-int rgw_reverse_init(char *conffile)
+/* Diameter maa handler */
+// static int rgw_reverse_handle_maa(struct msg **msg, struct avp *avp,
+// 								  struct session *sess, void *opaque,
+// 								  enum disp_action *act)
+// {
+// 	struct msg *der = *msg;
+// 	struct msg *dea = NULL;
+// 	struct radius_msg *rad_req = NULL;
+// 	struct radius_msg *rad_resp = NULL;
+// 	int ret;
+	
+// 	LOG_N("REVERSE GATEWAY: Received maa message for processing");
+// 	TRACE_DEBUG(FULL, "Handling Diameter maa message");
+	
+// 	/* Convert MAA to RADIUS Access-Challenge */
+// 	LOG_N("REVERSE GATEWAY: Converting MAA to RADIUS Access-Challenge");
+// 	ret = rgw_reverse_maa_to_radius(der, &rad_req);
+// 	if (ret != 0) {
+// 		LOG_E("REVERSE GATEWAY ERROR: Failed to convert DER to RADIUS (ret=%d)", ret);
+// 		TRACE_ERROR("Failed to convert DER to RADIUS");
+// 		goto error;
+// 	}
+// 	LOG_N("REVERSE GATEWAY: Successfully converted DER to RADIUS");
+	
+// 	/* Send RADIUS request and get response */
+// 	LOG_N("REVERSE GATEWAY: Calling rgw_reverse_radius_send_recv");
+// 	ret = rgw_reverse_radius_send_recv(rad_req, &rad_resp);
+// 	if (ret != 0) {
+// 		LOG_E("REVERSE GATEWAY ERROR: Failed to communicate with RADIUS server (ret=%d)", ret);
+// 		TRACE_ERROR("Failed to communicate with RADIUS server");
+// 		goto error;
+// 	}
+// 	LOG_N("REVERSE GATEWAY: Got RADIUS response, converting to DEA");
+	
+// 	/* Convert RADIUS response to DEA */
+// 	ret = rgw_reverse_radius_to_dea(rad_resp, der, &dea);
+// 	if (ret != 0) {
+// 		LOG_E("REVERSE GATEWAY ERROR: Failed to convert RADIUS to DEA (ret=%d)", ret);
+// 		TRACE_ERROR("Failed to convert RADIUS to DEA");
+// 		goto error;
+// 	}
+// 	LOG_N("REVERSE GATEWAY: Successfully converted RADIUS to DEA");
+	
+// 	/* Update the message pointer to point to the answer */
+// 	*msg = dea;
+	
+// 	/* Send DEA */
+// 	CHECK_FCT(fd_msg_send(msg, NULL, NULL));
+	
+// 	/* Cleanup */
+// 	if (rad_req) {
+// 		LOG_N("REVERSE GATEWAY: Cleaning up RADIUS request");
+// 		radius_msg_free(rad_req);
+// 	}
+// 	if (rad_resp) {
+// 		LOG_N("REVERSE GATEWAY: Cleaning up RADIUS response");
+// 		radius_msg_free(rad_resp);
+// 	}
+	
+// 	LOG_N("REVERSE GATEWAY: Successfully processed DER -> DEA conversion");
+	
+// 	*act = DISP_ACT_CONT;
+// 	return 0;
+	
+// error:
+// 	/* Create error response */
+// 	CHECK_FCT(fd_msg_new_answer_from_req(fd_g_config->cnf_dict, &der, MSGFL_ANSW_ERROR));
+// 	*msg = der;  /* Update message pointer to the answer */
+	
+// 	/* Add error Result-Code */
+// 	struct avp *avp_rc;
+// 	union avp_value val;
+// 	CHECK_FCT(fd_msg_avp_new(dict_objs.Result_Code, 0, &avp_rc));
+// 	val.u32 = 3002;  /* DIAMETER_UNABLE_TO_DELIVER */
+// 	CHECK_FCT(fd_msg_avp_setvalue(avp_rc, &val));
+// 	CHECK_FCT(fd_msg_avp_add(*msg, MSG_BRW_LAST_CHILD, avp_rc));
+	
+// 	CHECK_FCT(fd_msg_send(msg, NULL, NULL));
+	
+// 	if (rad_req) {
+// 		LOG_E("REVERSE GATEWAY: Cleaning up RADIUS request");
+// 		radius_msg_free(rad_req);
+// 	}
+// 	if (rad_resp) {
+// 		LOG_E("REVERSE GATEWAY: Cleaning up RADIUS response");
+// 		radius_msg_free(rad_resp);
+// 	}
+	
+// 	LOG_N("REVERSE GATEWAY: Unsuccessfully processed DER -> DEA conversion");
+	
+// 	*act = DISP_ACT_CONT;
+// 	return 0;
+// }
+
+
+static int rgw_reverse_register_der_handler(struct disp_when *when)
 {
-	struct disp_when when;
+	/* Register Diameter handler for DER */
+	memset(when, 0, sizeof(*when));
+	/* when.command and when.app are struct dict_object pointers, need to look them up */
+	{
+		struct dict_object *cmd_der;
+		struct dict_object *app_eap;
+		struct dict_application_data app_data;
+		struct dict_cmd_data cmd_data;
+		
+		/* Look up Diameter EAP Application */
+		app_data.application_id = 5;
+		CHECK_FCT(fd_dict_search(fd_g_config->cnf_dict, DICT_APPLICATION, 
+		                          APPLICATION_BY_ID, &app_data.application_id, 
+		                          &app_eap, ENOENT));
+		
+		/* Look up DER command - it's actually part of the base protocol */
+		cmd_data.cmd_code = 268;
+		CHECK_FCT(fd_dict_search(fd_g_config->cnf_dict, DICT_COMMAND, 
+		                          CMD_BY_CODE_R, &cmd_data.cmd_code, 
+		                          &cmd_der, ENOENT));
+		
+		when->command = cmd_der;
+		when->app = app_eap;
+	}
+	
+	return 0;
+}
+
+// static int rgw_reverse_register_maa_handler(struct disp_when *when)
+// {
+// 	/* Register Diameter handler for maa */
+// 	memset(when, 0, sizeof(*when));
+// 	/* when.command and when.app are struct dict_object pointers, need to look them up */
+// 	{
+// 		struct dict_object *cmd_maa;
+// 		struct dict_object *app_eap;
+// 		struct dict_application_data app_data;
+// 		struct dict_cmd_data cmd_data;
+		
+// 		/* Look up Diameter EAP Application */
+// 		app_data.application_id = 5;
+// 		CHECK_FCT(fd_dict_search(fd_g_config->cnf_dict, DICT_APPLICATION, 
+// 		                          APPLICATION_BY_ID, &app_data.application_id, 
+// 		                          &app_eap, ENOENT));
+		
+// 		/* Look up MAA command - code 303 */
+// 		cmd_data.cmd_code = 303;
+// 		CHECK_FCT(fd_dict_search(fd_g_config->cnf_dict, DICT_COMMAND, 
+// 		                          CMD_BY_CODE_A, &cmd_data.cmd_code, 
+// 		                          &cmd_maa, ENOENT));
+		
+// 		when->command = cmd_maa;
+// 		when->app = app_eap;
+// 	}
+	
+	
+// 	return 0;
+// }
+
+/* Initialize reverse gateway */
+int rgw_reverse_init(char *conffile) {
 	
 	LOG_N("Initializing reverse gateway (Diameter->RADIUS)");
 	
@@ -533,40 +1012,25 @@ int rgw_reverse_init(char *conffile)
 	
 	/* Initialize dictionary */
 	CHECK_FCT(rgw_reverse_dict_init());
-	
+
 	/* Initialize RADIUS client */
 	CHECK_FCT(rgw_reverse_radius_client_init());
-	
-	/* Register Diameter handler for DER */
-	memset(&when, 0, sizeof(when));
-	/* when.command and when.app are struct dict_object pointers, need to look them up */
-	{
-		struct dict_object *cmd_der;
-		struct dict_object *app_eap;
-		struct dict_application_data app_data;
-		struct dict_cmd_data cmd_data;
-		
-		/* Look up Diameter EAP Application */
-		app_data.application_id = 5;
-		CHECK_FCT(fd_dict_search(fd_g_config->cnf_dict, DICT_APPLICATION, 
-		                          APPLICATION_BY_ID, &app_data.application_id, 
-		                          &app_eap, ENOENT));
-		
-		/* Look up DER command - it's actually part of the base protocol */
-		cmd_data.cmd_code = 268;
-		CHECK_FCT(fd_dict_search(fd_g_config->cnf_dict, DICT_COMMAND, 
-		                          CMD_BY_CODE_R, &cmd_data.cmd_code, 
-		                          &cmd_der, ENOENT));
-		
-		when.command = cmd_der;
-		when.app = app_eap;
-	}
-	
-	CHECK_FCT(fd_disp_register(rgw_reverse_handle_der, DISP_HOW_CC, 
-	                            &when, NULL, &der_handler_hdl));
-	
+
+	// Register handlers
+	struct disp_when when;
+	rgw_reverse_register_der_handler(&when);
+
+	CHECK_FCT(fd_disp_register(rgw_reverse_handle_der, DISP_HOW_CC,
+							   &when, NULL, &der_handler_hdl));
+
+	/* MAA handler registration disabled for now - needs proper 3GPP dictionary 
+	rgw_reverse_register_maa_handler(&when);
+
+	CHECK_FCT(fd_disp_register(rgw_reverse_handle_maa, DISP_HOW_CC,
+							   &when, NULL, &maa_handler_hdl));
+	*/
+
 	LOG_N("Reverse gateway initialized successfully");
-	
 	return 0;
 }
 
