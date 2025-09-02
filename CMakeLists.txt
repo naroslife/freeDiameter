@@ -19,7 +19,6 @@ SET(FD_PROJECT_VERSION_API 6)
 
 # The test framework, using CTest and CDash.
 INCLUDE(CTest)
-
 # CMake version
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 

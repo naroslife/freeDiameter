@@ -1,6 +1,14 @@
 # The app_radgw extension
 PROJECT("RADIUS/Diameter extensible gateway application for freeDiameter" C)
 
+# Find curl library for HTTP requests
+find_package(CURL REQUIRED)
+if(CURL_FOUND)
+    include_directories(${CURL_INCLUDE_DIRS})
+    message(STATUS "Found CURL version: ${CURL_VERSION_STRING}")
+    message(STATUS "CURL include dirs: ${CURL_INCLUDE_DIRS}")
+    message(STATUS "CURL libraries: ${CURL_LIBRARIES}")
+endif()
 
 ########### Main app_radgw extension #############
 
@@ -35,6 +43,9 @@ SET( RG_COMMON_HEADER
 
 # Compile these files as a freeDiameter extension.
 FD_ADD_EXTENSION(app_radgw ${RGW_DEFAULT_SRC} ${RG_COMMON_HEADER})
+
+# Link curl library to app_radgw
+target_link_libraries(app_radgw ${CURL_LIBRARIES})
 
 
 ########### RADIUS/Diameter translation agent plugins (support for RADIUS protocol) ############

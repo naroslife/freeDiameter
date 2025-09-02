@@ -27,6 +27,7 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <curl/curl.h>
 
 /* Configuration for reverse gateway */
 struct rgw_reverse_config {
@@ -1032,6 +1033,121 @@ int rgw_reverse_init(char *conffile) {
 
 	LOG_N("Reverse gateway initialized successfully");
 	return 0;
+}
+
+/* Response data structure for curl callback */
+struct curl_response_data {
+	char *data;
+	size_t size;
+};
+
+/* Curl write callback for response data */
+static size_t rgw_curl_write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
+	size_t realsize = size * nmemb;
+	struct curl_response_data *mem = (struct curl_response_data *)userp;
+	
+	char *ptr = realloc(mem->data, mem->size + realsize + 1);
+	if (!ptr) {
+		TRACE_ERROR("Not enough memory for curl response");
+		return 0;
+	}
+	
+	mem->data = ptr;
+	memcpy(&(mem->data[mem->size]), contents, realsize);
+	mem->size += realsize;
+	mem->data[mem->size] = 0;
+	
+	return realsize;
+}
+
+/* HTTP POST helper function using curl */
+static int rgw_reverse_http_post(const char *url, const char *json_data, char **response) {
+	CURL *curl;
+	CURLcode res;
+	struct curl_response_data response_data = {NULL, 0};
+	
+	curl = curl_easy_init();
+	if (!curl) {
+		TRACE_ERROR("Failed to initialize curl");
+		return -1;
+	}
+	
+	/* Set URL */
+	curl_easy_setopt(curl, CURLOPT_URL, url);
+	
+	/* Set POST data */
+	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data);
+	
+	/* Set content type to JSON */
+	struct curl_slist *headers = NULL;
+	headers = curl_slist_append(headers, "Content-Type: application/json");
+	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+	
+	/* Set write callback */
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, rgw_curl_write_callback);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&response_data);
+	
+	/* Set timeout */
+	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L);
+	
+	/* Perform the request */
+	res = curl_easy_perform(curl);
+	
+	/* Check for errors */
+	if (res != CURLE_OK) {
+		TRACE_ERROR("curl_easy_perform() failed: %s", curl_easy_strerror(res));
+		free(response_data.data);
+		curl_slist_free_all(headers);
+		curl_easy_cleanup(curl);
+		return -1;
+	}
+	
+	/* Get HTTP response code */
+	long http_code = 0;
+	curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+	
+	if (g_config && g_config->debug) {
+		TRACE_DEBUG(FULL, "HTTP POST to %s returned code %ld", url, http_code);
+		if (response_data.data) {
+			TRACE_DEBUG(FULL, "Response: %s", response_data.data);
+		}
+	}
+	
+	/* Clean up */
+	curl_slist_free_all(headers);
+	curl_easy_cleanup(curl);
+	
+	/* Return response if requested */
+	if (response) {
+		*response = response_data.data;
+	} else {
+		free(response_data.data);
+	}
+	
+	return (http_code == 200) ? 0 : -1;
+}
+
+/* Example usage: Send authentication event to external service */
+static void rgw_reverse_notify_auth_event(const char *session_id, const char *event_type, int result) {
+	char json_buffer[1024];
+	char *response = NULL;
+	
+	/* Build JSON payload */
+	snprintf(json_buffer, sizeof(json_buffer),
+		"{\"session_id\":\"%s\",\"event\":\"%s\",\"result\":%d,\"timestamp\":%ld}",
+		session_id, event_type, result, time(NULL));
+	
+	/* Send notification (example URL - would be configurable) */
+	const char *notify_url = "http://localhost:8080/api/auth/notify";
+	
+	if (rgw_reverse_http_post(notify_url, json_buffer, &response) == 0) {
+		if (g_config && g_config->debug) {
+			TRACE_DEBUG(FULL, "Successfully sent auth event notification");
+		}
+		free(response);
+	} else {
+		TRACE_DEBUG(INFO, "Failed to send auth event notification");
+	}
 }
 
 /* Cleanup reverse gateway */
