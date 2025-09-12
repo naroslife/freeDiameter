@@ -112,7 +112,7 @@ FD_OPTION_PLUGIN(RGWX_ACCT "Build Accounting RADIUS translation plugin? (RFC2866
 ### VoWiFi EAP-AKA authentication plugin
 FD_OPTION_PLUGIN(RGWX_VOWIFI "Build VoWiFi EAP-AKA translation plugin? (3GPP SWm/SWx)" ON)
 	IF (RGWX_VOWIFI)
- 	   RGWX_ADD_PLUGIN(vowifi ${RG_COMMON_HEADER} rgwx_vowifi.c)
+ 	   RGWX_ADD_PLUGIN(vowifi ${RG_COMMON_HEADER} rgw_vowifi.c)
 	ENDIF (RGWX_VOWIFI)
 
 
