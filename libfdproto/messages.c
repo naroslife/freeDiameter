@@ -348,6 +348,7 @@ int fd_msg_new_answer_from_req ( struct dictionary * dict, struct msg ** msg, in
 	
 	/* Create the answer */
 	CHECK_FCT(  fd_msg_new( model, flags, &ans )  );
+	ans->msg_public.msg_appl = qry->msg_public.msg_appl;
 	
 	/* Set informations in the answer as in the query */
 	ans->msg_public.msg_code = qry->msg_public.msg_code; /* useful for MSGFL_ANSW_ERROR */

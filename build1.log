@@ -1,0 +1,203 @@
+-- Configuring done (0.1s)
+-- Generating done (0.2s)
+-- Build files have been written to: /home/atis1234/project3/vowifi/freeDiameter/build
+[  1%] Generating lex.rgw_conf.c
+[  1%] Generating rgw_conf.tab.c, rgw_conf.tab.h
+[  2%] Generating lex.rgwx_echodrop.c
+[  2%] Generating rgwx_echodrop.tab.c, rgwx_echodrop.tab.h
+[  4%] Linking C shared module ../dict_dcca_3gpp.fdx
+[  4%] Linking C shared module ../dict_eap.fdx
+[  5%] Linking C shared module ../dict_sip.fdx
+[  5%] Linking C shared module ../dict_dcca_starent.fdx
+[  6%] Linking C shared module ../dict_nasreq.fdx
+[  8%] Linking C shared module ../dict_nas_mipv6.fdx
+[  8%] Linking C shared module ../dict_mip6i.fdx
+[  8%] Linking C shared module ../dict_dcca.fdx
+[  8%] Building C object extensions/app_radgw/CMakeFiles/acct.dir/rgwx_acct.c.o
+[  9%] Building C object extensions/app_radgw/CMakeFiles/auth.dir/rgwx_auth.c.o
+[  9%] Built target version_information
+[ 10%] Building C object extensions/app_radgw/CMakeFiles/debug.dir/rgwx_debug.c.o
+[ 11%] Linking C shared module ../dict_mip6a.fdx
+[ 12%] Building C object extensions/app_radgw/CMakeFiles/vowifi.dir/rgwx_vowifi.c.o
+[ 13%] Linking C shared module ../dict_rfc5777.fdx
+[ 14%] Linking C shared module ../rt_busypeers.fdx
+[ 15%] Linking C shared module ../rt_default.fdx
+[ 16%] Linking C shared module ../rt_deny_by_size.fdx
+[ 17%] Linking C shared module ../rt_load_balance.fdx
+[ 18%] Linking C shared module ../rt_randomize.fdx
+[ 18%] Linking C shared module ../rt_redirect.fdx
+[ 19%] Linking C shared module ../rt_ignore_dh.fdx
+[ 21%] Building C object extensions/app_radgw/CMakeFiles/echodrop.dir/rgwx_echodrop.tab.c.o
+[ 21%] Linking C shared module ../dbg_dict_dump.fdx
+[ 22%] Building C object extensions/app_radgw/CMakeFiles/echodrop.dir/rgwx_echodrop.c.o
+[ 22%] Linking C shared module ../acl_wl.fdx
+[ 22%] Building C object extensions/app_radgw/CMakeFiles/echodrop.dir/lex.rgwx_echodrop.c.o
+[ 23%] Linking C shared module ../dbg_monitor.fdx
+[ 24%] Linking C shared module ../dbg_loglevel.fdx
+[ 25%] Linking C shared module ../rt_rewrite.fdx
+[ 25%] Linking C shared module ../dbg_msg_timings.fdx
+[ 26%] Linking C shared module ../dbg_msg_dumps.fdx
+[ 27%] Building C object extensions/app_radgw/CMakeFiles/app_radgw.dir/lex.rgw_conf.c.o
+[ 27%] Building C object extensions/app_radgw/CMakeFiles/app_radgw.dir/md5.c.o
+[ 28%] Building C object extensions/app_radgw/CMakeFiles/app_radgw.dir/rgw_msg_attrtype.c.o
+[ 28%] Building C object extensions/app_radgw/CMakeFiles/app_radgw.dir/rgw_main.c.o
+[ 28%] Building C object extensions/app_radgw/CMakeFiles/app_radgw.dir/rgw_conf.tab.c.o
+[ 29%] Building C object extensions/app_radgw/CMakeFiles/app_radgw.dir/rgw_clients.c.o
+[ 30%] Building C object extensions/app_radgw/CMakeFiles/app_radgw.dir/radius.c.o
+[ 31%] Building C object extensions/app_radgw/CMakeFiles/app_radgw.dir/rgw_msg_codes.c.o
+[ 33%] Building C object extensions/app_radgw/CMakeFiles/app_radgw.dir/rgw_servers.c.o
+[ 34%] Linking C shared module ../test_ccload.fdx
+[ 32%] Linking C shared module ../test_cc.fdx
+[ 34%] Building C object extensions/app_radgw/CMakeFiles/app_radgw.dir/rgw_plugins.c.o
+[ 34%] Linking C shared module ../dbg_rt.fdx
+[ 35%] Building C object extensions/app_radgw/CMakeFiles/app_radgw.dir/rgw_reverse.c.o
+[ 35%] Building C object extensions/app_radgw/CMakeFiles/app_radgw.dir/rgw_worker.c.o
+[ 35%] Built target dict_mip6i
+[ 35%] Built target dict_nasreq
+[ 36%] Built target dict_eap
+[ 36%] Built target dict_sip
+[ 36%] Built target dict_nas_mipv6
+[ 37%] Built target dict_dcca_starent
+[ 38%] Built target dict_dcca_3gpp
+[ 40%] Built target rt_busypeers
+[ 40%] Built target dict_mip6a
+[ 41%] Built target dict_dcca
+[ 42%] Linking C shared library libfdproto.so
+[ 42%] Built target rt_load_balance
+[ 42%] Linking C shared module ../debug.rgwx
+[ 48%] Built target acl_wl
+[ 45%] Built target rt_redirect
+[ 49%] Built target dbg_dict_dump
+[ 51%] Built target dbg_loglevel
+[ 54%] Built target rt_default
+[ 56%] Built target rt_deny_by_size
+[ 56%] Built target dbg_msg_timings
+[ 56%] Built target dbg_monitor
+[ 56%] Built target dict_rfc5777
+[ 56%] Linking C shared module ../echodrop.rgwx
+[ 56%] Built target dbg_msg_dumps
+[ 56%] Built target rt_ignore_dh
+[ 59%] Built target rt_rewrite
+[ 59%] Built target rt_randomize
+[ 59%] Built target test_ccload
+[ 60%] Built target dbg_rt
+[ 61%] Built target test_cc
+[ 62%] Linking C shared module ../vowifi.rgwx
+[ 62%] Built target debug
+[ 62%] Built target echodrop
+[ 70%] Built target libfdproto
+[ 70%] Linking C shared library libfdcore.so
+[ 70%] Linking C shared module ../app_radgw.fdx
+[ 70%] Built target vowifi
+[ 70%] Built target app_radgw
+[ 87%] Built target libfdcore
+[ 87%] Linking C executable testsctp
+[ 87%] Linking C executable freeDiameterd
+[ 88%] Linking C executable testpeers
+[ 88%] Linking C executable testfifo
+[ 89%] Linking C executable testostr
+[ 89%] Linking C executable testdict
+[ 89%] Linking C executable testmesg
+[ 90%] Linking C executable testloadext
+[ 89%] Linking C executable testsess
+[ 90%] Linking C executable testmesg_stress
+[ 91%] Linking C executable testdisp
+[ 92%] Linking C executable testcnx
+[ 93%] Built target testostr
+[ 93%] Built target testfifo
+[ 94%] Built target freeDiameterd
+[ 94%] Built target testdict
+[ 94%] Built target testloadext
+[ 95%] Built target testsctp
+[ 95%] Built target testcnx
+[ 97%] Built target testmesg
+[ 96%] Built target testmesg_stress
+[ 97%] Built target testdisp
+[ 98%] Built target testpeers
+[ 99%] Built target testsess
+[ 99%] Linking C shared module ../auth.rgwx
+[100%] Linking C shared module ../acct.rgwx
+[100%] Built target auth
+[100%] Built target acct
+-- Install configuration: "Debug"
+-- Installing: /opt/vowifi/freediameter/include/freeDiameter/freeDiameter-host.h
+-- Installing: /opt/vowifi/freediameter/include/freeDiameter/libfdproto.h
+-- Installing: /opt/vowifi/freediameter/include/freeDiameter/libfdcore.h
+-- Installing: /opt/vowifi/freediameter/include/freeDiameter/extension.h
+-- Installing: /opt/vowifi/freediameter/lib/libfdproto.so.1.5.0
+-- Installing: /opt/vowifi/freediameter/lib/libfdproto.so.6
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/libfdproto.so.1.5.0" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/libfdproto.so
+-- Installing: /opt/vowifi/freediameter/lib/libfdcore.so.1.5.0
+-- Installing: /opt/vowifi/freediameter/lib/libfdcore.so.6
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/libfdcore.so.1.5.0" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/libfdcore.so
+-- Installing: /opt/vowifi/freediameter/bin/freeDiameterd-1.5.0
+-- Installing: /opt/vowifi/freediameter/bin/freeDiameterd
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/bin/freeDiameterd-1.5.0" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/dict_nasreq.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/dict_nasreq.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/dict_eap.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/dict_eap.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/dict_dcca.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/dict_dcca.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/dict_dcca_3gpp.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/dict_dcca_3gpp.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/dict_dcca_starent.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/dict_dcca_starent.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/dict_sip.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/dict_sip.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/dict_mip6a.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/dict_mip6a.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/dict_mip6i.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/dict_mip6i.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/dict_nas_mipv6.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/dict_nas_mipv6.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/dict_rfc5777.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/dict_rfc5777.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/debug.rgwx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/debug.rgwx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/auth.rgwx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/auth.rgwx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/acct.rgwx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/acct.rgwx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/vowifi.rgwx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/vowifi.rgwx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/echodrop.rgwx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/echodrop.rgwx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/app_radgw.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/app_radgw.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/rt_busypeers.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/rt_busypeers.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/rt_default.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/rt_default.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/rt_deny_by_size.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/rt_deny_by_size.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/rt_ignore_dh.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/rt_ignore_dh.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/rt_load_balance.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/rt_load_balance.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/rt_randomize.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/rt_randomize.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/rt_redirect.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/rt_redirect.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/rt_rewrite.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/rt_rewrite.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/acl_wl.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/acl_wl.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/dbg_dict_dump.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/dbg_dict_dump.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/dbg_loglevel.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/dbg_loglevel.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/dbg_monitor.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/dbg_monitor.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/dbg_msg_timings.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/dbg_msg_timings.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/dbg_msg_dumps.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/dbg_msg_dumps.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/dbg_rt.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/dbg_rt.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/test_cc.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/test_cc.fdx" to "/opt/vowifi/freediameter/lib"
+-- Installing: /opt/vowifi/freediameter/lib/freeDiameter/test_ccload.fdx
+-- Set non-toolchain portion of runtime path of "/opt/vowifi/freediameter/lib/freeDiameter/test_ccload.fdx" to "/opt/vowifi/freediameter/lib"

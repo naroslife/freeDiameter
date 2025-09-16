@@ -32,7 +32,7 @@
 /*
  * Show what was added from one dictionary dump JSON file compared to a second one
  */
-#include <json/json.h>
+#include <jsoncpp/json/json.h>
 
 #include <fstream>
 #include <iostream>

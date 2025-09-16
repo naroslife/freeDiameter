@@ -35,7 +35,7 @@
  */
 #include <freeDiameter/extension.h>
 #include <json/json.h>
-#include <json/SchemaValidator.h>
+//#include <json/SchemaValidator.h>
 #include <sys/stat.h>
 
 extern const char *dict_json_dict_schema;
@@ -114,10 +114,11 @@ add_applications(const Json::Value &config)
                 application_data.application_id = applications[i]["Code"].asUInt();
                 application_data.application_name = (char *)(void *)applications[i]["Name"].asCString();
                 if ((ret=fd_dict_new(fd_g_config->cnf_dict, DICT_APPLICATION, &application_data, NULL, NULL)) != 0) {
-                        LOG_E("error adding Application '%s' to dictionary: %s", applications[i]["Name"].asCString(), strerror(ret));
-                        return false;
+                   LOG_E("error adding Application '%s' to dictionary: %s", applications[i]["Name"].asCString(), strerror(ret));
+                        //return false;
+                } else {
+                   LOG_D("Added Application '%s' to dictionary", applications[i]["Name"].asCString());
                 }
-                LOG_D("Added Application '%s' to dictionary", applications[i]["Name"].asCString());
         }
 
         return true;
@@ -354,7 +355,7 @@ add_avps(const Json::Value &config)
         for (Json::ArrayIndex i=0; i<avps.size(); i++) {
                 if (!add_avp(avps[i])) {
                         LOG_E("error adding AVP to dictionary");
-                        return false;
+                        //return false;
                 }
         }
 
@@ -654,7 +655,8 @@ add_types(const Json::Value &config)
                 type_data.type_name = (char *)(void *)types[i]["Name"].asCString();
                 if ((ret=fd_dict_new(fd_g_config->cnf_dict, DICT_TYPE, &type_data, NULL, NULL)) != 0) {
                         LOG_E("error adding Type '%s' to dictionary: %s", types[i]["Name"].asCString(), strerror(ret));
-                        return false;
+                        //return false;
+                        continue;
                 }
                 LOG_D("Added Type '%s' to dictionary", types[i]["Name"].asCString());
         }
@@ -690,7 +692,7 @@ parse_json_from_file(const char *conffile, Json::Value &jv)
         char *buf;
         FILE *fp;
         Json::Reader reader;
-        static Json::SchemaValidator *validator = NULL;
+        //static Json::SchemaValidator *validator = NULL;
 
         if (conffile == NULL || stat(conffile, &sb) < 0 || !S_ISREG(sb.st_mode)) {
                 LOG_E("invalid or missing configuration: %s", conffile ?: "(null)");
@@ -718,6 +720,7 @@ parse_json_from_file(const char *conffile, Json::Value &jv)
         }
         free(buf);
 
+        /*
         if (validator == NULL) {
                 try {
                         validator = new Json::SchemaValidator(std::string(dict_json_dict_schema));
@@ -735,7 +738,7 @@ parse_json_from_file(const char *conffile, Json::Value &jv)
                 }
                 return false;
         }
-
+        */
 #if 0
         Json::StyledWriter styledWriter;
         std::cout << styledWriter.write(jv);

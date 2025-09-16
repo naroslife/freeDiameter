@@ -2,7 +2,7 @@
 * Software License Agreement (BSD License)                                                               *
 * Author: Sebastien Decugis <sdecugis@freediameter.net>							 *
 *													 *
-* Copyright (c) 2013, WIDE Project and NICT								 *
+* Copyright (c) 2011, WIDE Project and NICT								 *
 * All rights reserved.											 *
 * 													 *
 * Redistribution and use of this software in source and binary forms, with or without modification, are  *
@@ -32,84 +32,14 @@
 * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF   *
 * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.								 *
 *********************************************************************************************************/
-/* 
- * Main file of the app_radgw extension.
- */
 
-#include "rgw.h"
-#include "test_pool.h"  // ← Oracle pool header
+#include <freeDiameter/extension.h>
 
-//static int oracle_initialized = 0;
-
-/* Extension entry point called by freeDiameter */
-static int rgw_main(char * conffile) 
-{
-    /*
-	// Oracle konfiguráció environment változókból vagy config-ból
-    const char *db_user = getenv("ORACLE_USER");
-    if (!db_user) db_user = "webshop_user";
-    
-    const char *db_pass = getenv("ORACLE_PASS");
-    if (!db_pass) db_pass = "StrongPassword123";
-    
-    const char *db_conn = getenv("ORACLE_CONNECT");
-    if (!db_conn) db_conn = "//172.27.96.1:1521/xepdb1";//"//192.168.100.35:1521/xepdb1";
-    
-    oracle_pool_cfg_t cfg = {
-        .user = db_user,
-        .password = db_pass,
-        .connect = db_conn,
-        .minSessions = 2,
-        .maxSessions = 20,
-        .sessionIncr = 2,
-        .nowait = 1  // Non-blocking for production
-    };
-    
-    if (!oracle_pool_init_singleton(&cfg)) {
-        fd_log_error("[RadGW] Failed to initialize Oracle pool - using test/mock mode");
-        fd_log_error("[RadGW] Oracle config: user=%s, connect=%s", db_user, db_conn);
-        oracle_initialized = 0;  // Continue without Oracle
-        fd_log_notice("[RadGW] Continuing without Oracle database connection");
-    } else {
-        oracle_initialized = 1;
-        fd_log_notice("[RadGW] Oracle pool initialized successfully");
-    }
-        */
-    
-	CHECK_FCT( rgw_clients_init() );
-	
-	CHECK_FCT( rgw_servers_init() );
-	
-	CHECK_FCT( rgw_conf_handle(conffile) );
-	
-	/* Initialize reverse gateway (Diameter->RADIUS) */
-	CHECK_FCT( rgw_reverse_init(conffile) );
-	
-	LOG_D( "Extension RADIUS Gateway initialized with configuration: '%s'", conffile);
-	rgw_servers_dump();
-	rgw_clients_dump();
-	rgw_plg_dump();
-	
-	/* Start making extension list accelerators */
-	rgw_plg_start_cache();
-	
-	/* Start the worker threads */
-	CHECK_FCT( rgw_work_start() );
-	
-	/* Start the servers */
-	CHECK_FCT( rgw_servers_start() );
-	
-	return 0;
-}
-
-/* Unload */
+/* The function MUST be called this */
 void fd_ext_fini(void)
 {
-	rgw_servers_fini();
-	rgw_work_fini();
-	rgw_plg_fini();
-	rgw_clients_fini();
-	rgw_reverse_fini();
+	/* This code is executed when the daemon is exiting; cleanup management should be placed here */
+	TRACE_DEBUG(INFO, "Extension is terminated... Bye!");
+	return ;
 }
 
-EXTENSION_ENTRY("app_radgw", rgw_main);

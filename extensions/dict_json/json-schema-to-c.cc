@@ -39,7 +39,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include <json/SchemaValidator.h>
+//#include <json/SchemaValidator.h>
 
 [[noreturn]]
 void usage(char *prg, int exit_status) {

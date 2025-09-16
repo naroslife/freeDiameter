@@ -1648,11 +1648,11 @@ int fd_dict_new ( struct dictionary * dict, enum dict_object_type type, void * d
 		case DICT_COMMAND:
 			/* A command object is linked in g_list_cmd_name and g_list_cmd_code by its name and code */
 			ret = fd_list_insert_ordered ( &dict->dict_cmd_code, &new->list[1], (int (*)(void*, void *))order_cmd_by_codefl, (void **)&locref );
-			if (ret)
+			if (ret && ret != EEXIST)
 				goto error_unlock;
 
 			ret = fd_list_insert_ordered ( &dict->dict_cmd_name, &new->list[0], (int (*)(void*, void *))order_cmd_by_name, (void **)&locref );
-			if (ret) {
+			if (ret && ret != EEXIST) {
 				fd_list_unlink(&new->list[1]);
 				goto error_unlock;
 			}
